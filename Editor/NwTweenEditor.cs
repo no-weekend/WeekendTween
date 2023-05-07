@@ -119,6 +119,15 @@ namespace noWeekend
 				EditorUtility.SetDirty(myTarget);
 			}
 
+			//Select if a tween initilises with the settings of 
+			bool useInitiliseActiveStatus = EditorGUILayout.Toggle("Initilise Active Status", myTarget.initiliseActiveState);
+			if (useInitiliseActiveStatus != myTarget.initiliseActiveState)
+			{
+				myTarget.initiliseActiveState = useInitiliseActiveStatus;
+				EditorUtility.SetDirty(myTarget);
+			}
+
+
 			//Select if a tween uses unscaled time or not
 			bool useUnscaledTimeValue = EditorGUILayout.Toggle("Use Unscaled time", myTarget.useUnscaledTime);
 			if (useUnscaledTimeValue != myTarget.useUnscaledTime)

@@ -17,7 +17,8 @@ namespace noWeekend
         [SerializeReference] public List<EaseAction> deactivateEaseActions = new List<EaseAction>();
 
         public bool activateOnEnable;
-        public bool useUnscaledTime;
+        public bool initiliseActiveState = true;
+		public bool useUnscaledTime;
 
         public UnityEvent onActivateCompleteAction,onDeactivateCompleteAction;
         private Coroutine onActivateCoroutine, onDeactivateCoroutine;
@@ -56,13 +57,29 @@ namespace noWeekend
 
 		private void OnEnable()
         {
-            if (activateOnEnable)
-            {
-                Activate();
-            }
+            if (initiliseActiveState) InitiliseActiveState();
+			if (activateOnEnable)Activate();
         }
 
-        public void RemoveEaseAction(EaseAction easeAction, bool isActivateEase)
+        private void InitiliseActiveState()
+        {
+            foreach (EaseAction easeAction in activateEaseActions)
+            {
+                if (!IsEaseActionFirstOfType(activateEaseActions, easeAction)) continue;
+
+                easeAction.SetStart(targetTransform);
+			}
+        }
+
+        private bool IsEaseActionFirstOfType(List<EaseAction> easeActions,EaseAction easeAction)
+        {
+            EaseAction firstOfTypeAction = easeActions.Where(item => item.easeType == easeAction.easeType).Aggregate((min, next) => next.delay > min.delay ? next : min);
+
+            return easeAction == firstOfTypeAction;
+		}
+
+
+		public void RemoveEaseAction(EaseAction easeAction, bool isActivateEase)
         {
 			if (isActivateEase)
 			{
@@ -126,7 +143,7 @@ namespace noWeekend
 		public IEnumerator ActivateCoroutine(Action onComplete = null)
 		{
 			//Get the length of the longest tween (including delay)
-			float longestTween = LongestDeactivateTween;
+			float longestTween = LongestActivateTween;
 
 			//Loop through each active tween 
 			timer = 0;
@@ -173,8 +190,8 @@ namespace noWeekend
 
 		IEnumerator DeactivateCoroutine(Action onComplete = null)
 		{
-			//Get the length of the longest tween (including delay)
-			float longestTween = deactivateEaseActions.Max(item => item.Duration);
+            //Get the length of the longest tween (including delay)
+            float longestTween = LongestDeactivateTween;
 
 			//Loop through each active tween 
 			float timer = 0;
