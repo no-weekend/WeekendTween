@@ -188,7 +188,7 @@ namespace noWeekend
 			StartCoroutine(DeactivateCoroutine(onComplete));
         }
 
-		IEnumerator DeactivateCoroutine(Action onComplete = null)
+		public IEnumerator DeactivateCoroutine(Action onComplete = null)
 		{
             //Get the length of the longest tween (including delay)
             float longestTween = LongestDeactivateTween;
