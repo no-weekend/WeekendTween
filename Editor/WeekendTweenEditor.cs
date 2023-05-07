@@ -6,7 +6,7 @@ using UnityEditor;
 namespace noWeekend
 {
 	[CustomEditor(typeof(WeekendTween))]
-	public class NwTweenEditor : Editor
+	public class WeekendTweenEditor : Editor
 	{
 		private enum State { None, Activate, Deactivate }
 		private State previewState = State.None;
@@ -247,13 +247,46 @@ namespace noWeekend
 			//Preview ActiveTweens
 			if (easeActions.Count > 0 && !Application.isPlaying)
 			{
-				bool previewOnEnabled = EditorGUILayout.Toggle("Preview", previewState == State.Activate);
-				if (previewOnEnabled != (previewState == State.Activate))
+				State correctState = (activateActions ? State.Activate : State.Deactivate);
+
+				bool preview = EditorGUILayout.Toggle("Preview", previewState == correctState);
+
+				if(preview != (previewState == correctState))
 				{
-					previewState = previewOnEnabled ? State.Activate : State.None;
-					previewState = State.Activate;
+					if(preview == false)
+					{
+						previewState = State.None;
+					}
+					else
+					{
+						previewState = correctState;
+					}
 					SceneView.RepaintAll();
 				}
+			}
+
+			//If editor is playing then show buttons for testing the actual tween
+			if (easeActions.Count > 0 &&  Application.isPlaying)
+			{
+				GUILayout.BeginHorizontal();
+
+				GUILayout.Label("Live Test");
+
+				//Ease Type Window Popup
+				if (GUILayout.Button("Test"))
+				{
+					if (activateActions)
+					{
+						myTarget.Activate();
+					}
+					else
+					{
+						myTarget.Deactivate();
+					}
+					
+				}
+
+				EditorGUILayout.EndHorizontal();
 			}
 
 			//space

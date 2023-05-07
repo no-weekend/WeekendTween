@@ -54,14 +54,17 @@ namespace noWeekend
 			}
 		}
 
-
+        //On enable of the object
 		private void OnEnable()
         {
             if (initiliseActiveState) InitiliseActiveState();
 			if (activateOnEnable)Activate();
         }
 
-        private void InitiliseActiveState()
+        /// <summary>
+        /// Sets the target transform to the initial state of any Activate ease Actions
+        /// </summary>
+        public void InitiliseActiveState()
         {
             foreach (EaseAction easeAction in activateEaseActions)
             {
@@ -71,6 +74,7 @@ namespace noWeekend
 			}
         }
 
+        //Checks if a given ease action is the first of its type in a sequence
         private bool IsEaseActionFirstOfType(List<EaseAction> easeActions,EaseAction easeAction)
         {
             EaseAction firstOfTypeAction = easeActions.Where(item => item.easeType == easeAction.easeType).Aggregate((min, next) => next.delay > min.delay ? next : min);
@@ -78,7 +82,7 @@ namespace noWeekend
             return easeAction == firstOfTypeAction;
 		}
 
-
+      
 		public void RemoveEaseAction(EaseAction easeAction, bool isActivateEase)
         {
 			if (isActivateEase)
@@ -137,6 +141,11 @@ namespace noWeekend
         {
 			StopAllTweens();
 
+			if (activateEaseActions.Count == 0)
+			{
+				return;
+			}
+
 			onActivateCoroutine = StartCoroutine(ActivateCoroutine(onComplete));
         }
 
@@ -185,6 +194,12 @@ namespace noWeekend
 		public void Deactivate(Action onComplete = null)
         {
             StopAllTweens();
+
+            if(deactivateEaseActions.Count == 0)
+            {
+                return;
+            }
+
 			StartCoroutine(DeactivateCoroutine(onComplete));
         }
 
