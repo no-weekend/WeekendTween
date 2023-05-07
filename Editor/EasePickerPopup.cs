@@ -121,20 +121,20 @@ namespace noWeekend
 		void DrawCurve(Rect rect,EaseType easeType, int resolution, Color color, float width)
 		{
 			//Draw a smaller rect with a border
-			rect.y += 15;
+			rect.y += 18;
 			rect.x += 5;
 			rect.width -= 10;
-			rect.height -= 30;
+			rect.height -= 36;
 
 			//plot all the point for the line to be drawn
 			Vector3[] lineVertices = new Vector3[resolution];
 
 			for (int i = 0; i < resolution; i++)
 			{
-				float time = i / (float)resolution;
+				float time = i / (float)(resolution -1);
 				float value = Ease.GetEase(easeType, time) * rect.height;
 
-				lineVertices[i] = new Vector2((1 - time) * rect.width, value) + new Vector2(rect.xMin, rect.yMin + EaseLineOffset(easeType));
+				lineVertices[i] = new Vector2((time) * rect.width, 1- value) + new Vector2(rect.xMin, rect.yMax + EaseLineOffset(easeType));
 			}
 
 			//Draw the line
@@ -147,11 +147,11 @@ namespace noWeekend
 		{
 			if (easeType == EaseType.ElasticIn)
 			{
-				return 10;
+				return -14;
 			}
 			else if (easeType == EaseType.ElasticOut)
 			{
-				 return -10;
+				 return 10;
 			}
 			return 0;
 		}
