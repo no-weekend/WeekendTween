@@ -141,7 +141,7 @@ namespace noWeekend
 
 			if (easeActionDeactivate != null)
 			{
-				((PositionEaseAction)easeActionActivate).toPosition = startPosition;
+				((PositionEaseAction)easeActionDeactivate).toPosition = startPosition;
 			}
 		}
 
@@ -161,7 +161,7 @@ namespace noWeekend
 
 			if (easeActionDeactivate != null)
 			{
-				((PositionEaseAction)easeActionActivate).fromPosition = endPosition;
+				((PositionEaseAction)easeActionDeactivate).fromPosition = endPosition;
 			}
 		}
 
