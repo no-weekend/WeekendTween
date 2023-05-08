@@ -16,6 +16,7 @@ namespace noWeekend
         const float B5 = 2.25f / 2.75f;
         const float B6 = 2.625f / 2.75f;
 
+
         public static float GetEase(EaseType easeType, float time)
         {
             switch (easeType)

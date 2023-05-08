@@ -4,13 +4,13 @@ using UnityEngine;
 using System.Linq;
 using System;
 using UnityEngine.Events;
-using UnityEngine.UIElements;
+using UnityEngine.UI;
 
 namespace noWeekend
 {
-    public class WeekendTween : MonoBehaviour
+	public class WeekendTween : MonoBehaviour
     {
-        public enum EaseActionType { Position, Rotation,Scale}
+        public enum EaseActionType { Position, Rotation, Scale, Rect, CanvasAlpha}
         public Transform targetTransform;
 
         [SerializeReference] public List<EaseAction> activateEaseActions = new List<EaseAction>();
@@ -18,9 +18,14 @@ namespace noWeekend
 
         public bool activateOnEnable;
         public bool initiliseActiveState = true;
+		public bool hideOnEnable;
+		public bool hideAfterDisable;
 		public bool useUnscaledTime;
 
-        public UnityEvent onActivateCompleteAction,onDeactivateCompleteAction;
+		private List<Renderer> renders;     //List of renderers in this reference object
+		private List<Image> images;
+
+		public UnityEvent onActivateCompleteAction,onDeactivateCompleteAction;
         private Coroutine onActivateCoroutine, onDeactivateCoroutine;
 
         public float LongestActivateTween => activateEaseActions.Max(item => item.Duration);
@@ -28,15 +33,9 @@ namespace noWeekend
 
         private float timer;
 
-        public float EditorTimer
-        {
-			get
-			{
-				return timer;
-			}
-		}
+        public float EditorTimer => timer;
 
-        public float ActivateEditorTimer
+		public float ActivateEditorTimer
         {
             set
             {
@@ -58,8 +57,44 @@ namespace noWeekend
 		private void OnEnable()
         {
             if (initiliseActiveState) InitiliseActiveState();
+
+			if (hideOnEnable) Hide();
+
 			if (activateOnEnable)Activate();
         }
+
+		//Hide all image and renderers
+		public void Hide()
+		{
+			GetAllRenderersIfNeeded();
+
+			foreach (Renderer renderer in renders)
+			{
+				renderer.enabled = false;
+			}
+
+			foreach (Image image in images)
+			{
+				image.enabled = false;
+			}
+		}
+
+		//Unhide all images and renderers
+		public void Show()
+		{
+
+			GetAllRenderersIfNeeded();
+
+			foreach (Renderer renderer in renders)
+			{
+				renderer.enabled = true;
+			}
+
+			foreach (Image image in images)
+			{
+				image.enabled = true;
+			}
+		}
 
         /// <summary>
         /// Sets the target transform to the initial state of any Activate ease Actions
@@ -77,12 +112,62 @@ namespace noWeekend
         //Checks if a given ease action is the first of its type in a sequence
         private bool IsEaseActionFirstOfType(List<EaseAction> easeActions,EaseAction easeAction)
         {
-            EaseAction firstOfTypeAction = easeActions.Where(item => item.easeType == easeAction.easeType).Aggregate((min, next) => next.delay > min.delay ? next : min);
+            EaseAction firstOfTypeAction = easeActions.Where(item => item.easeType == easeAction.easeType).Aggregate((min, next) => next.delay < min.delay ? next : min);
 
             return easeAction == firstOfTypeAction;
 		}
 
-      
+		//Checks if a given ease action is the first of its type in a sequence
+		private bool IsEaseActionLastOfType(List<EaseAction> easeActions, EaseAction easeAction)
+		{
+			EaseAction lastOfTypeAction = easeActions.Where(item => item.easeType == easeAction.easeType).Aggregate((max, next) => next.delay + next.duration > max.delay + max.duration ? next : max);
+
+			return easeAction == lastOfTypeAction;
+		}
+
+		//Change the start postion of a Position Ease action
+		public void ChangeStartPositionsOfEase(Vector3 startPosition)
+		{
+			//Get the first position ease action of activate actions
+			EaseAction easeActionActivate = activateEaseActions.FirstOrDefault(item => item.EaseActionType == WeekendTween.EaseActionType.Position);
+
+			if(easeActionActivate != null)
+			{
+				((PositionEaseAction)easeActionActivate).fromPosition = startPosition;
+			}
+
+			//Get the first position ease action of activate actions
+			EaseAction easeActionDeactivate = deactivateEaseActions.FirstOrDefault(item => item.EaseActionType == WeekendTween.EaseActionType.Position);
+
+			if (easeActionDeactivate != null)
+			{
+				((PositionEaseAction)easeActionActivate).toPosition = startPosition;
+			}
+		}
+
+		//Change the end postion of a Position Ease action
+		public void ChangeEndPositionsOfEase(Vector3 endPosition)
+		{
+			//Get the first position ease action of activate actions
+			EaseAction easeActionActivate = activateEaseActions.FirstOrDefault(item => item.EaseActionType == WeekendTween.EaseActionType.Position);
+
+			if (easeActionActivate != null)
+			{
+				((PositionEaseAction)easeActionActivate).toPosition = endPosition;
+			}
+
+			//Get the first position ease action of activate actions
+			EaseAction easeActionDeactivate = deactivateEaseActions.FirstOrDefault(item => item.EaseActionType == WeekendTween.EaseActionType.Position);
+
+			if (easeActionDeactivate != null)
+			{
+				((PositionEaseAction)easeActionActivate).fromPosition = endPosition;
+			}
+		}
+
+		// -----------------------------------------------------------------
+		// Add - Remove Ease Actions 
+
 		public void RemoveEaseAction(EaseAction easeAction, bool isActivateEase)
         {
 			if (isActivateEase)
@@ -132,25 +217,44 @@ namespace noWeekend
             }
         }
 
-        public void Activate()
-        {
-            Activate(null);
+		public void OnAddRectEaseButtonPress(bool isActivateEase)
+		{
+			if (isActivateEase)
+			{
+				activateEaseActions.Add(new RectEaseAction(((RectTransform)targetTransform).rect));
+			}
+			else
+			{
+				deactivateEaseActions.Add(new RectEaseAction(((RectTransform)targetTransform).rect));
+			}
 		}
+
+		//Stop all tweens if they are currently happening
+		private void StopAllTweens()
+		{
+			if (onDeactivateCoroutine != null) StopCoroutine(onDeactivateCoroutine);
+			if (onActivateCoroutine != null) StopCoroutine(onActivateCoroutine);
+		}
+
+		// -----------------------------------------------------------------
+		// Activate Eases
+
+		public void Activate() => Activate(null);
 
         public void Activate(Action onComplete = null)
         {
 			StopAllTweens();
-
-			if (activateEaseActions.Count == 0)
-			{
-				return;
-			}
-
+			if (activateEaseActions.Count == 0)return;
 			onActivateCoroutine = StartCoroutine(ActivateCoroutine(onComplete));
         }
 
 		public IEnumerator ActivateCoroutine(Action onComplete = null)
 		{
+			if (hideOnEnable)
+			{
+				Show();
+			}
+
 			//Get the length of the longest tween (including delay)
 			float longestTween = LongestActivateTween;
 
@@ -170,7 +274,10 @@ namespace noWeekend
 			//Finish all Tweens
 			foreach (EaseAction easeAction in activateEaseActions)
 			{
-				easeAction.SetEnd(targetTransform);
+				if(IsEaseActionLastOfType(activateEaseActions, easeAction))
+				{
+					easeAction.SetEnd(targetTransform);
+				}
 			}
 
 			//Run any on complete Actions
@@ -178,31 +285,21 @@ namespace noWeekend
 			onComplete?.Invoke();
 		}
 
-        //Stop all tweens if they are currently happening
-        private void StopAllTweens()
-        {
-			if (onDeactivateCoroutine != null) StopCoroutine(onDeactivateCoroutine);
-			if (onActivateCoroutine != null) StopCoroutine(onActivateCoroutine);
-		}
+		// -----------------------------------------------------------------
+		// Deactivate Eases
 
+		//Deactivate Ease actions 
+		public void Deactivate() => Deactivate(null);
 
-		public void Deactivate()
-		{
-			Deactivate(null);
-		}
-
+		//Deactivate Ease actions with callback
 		public void Deactivate(Action onComplete = null)
         {
             StopAllTweens();
-
-            if(deactivateEaseActions.Count == 0)
-            {
-                return;
-            }
-
+            if(deactivateEaseActions.Count == 0) return;
 			StartCoroutine(DeactivateCoroutine(onComplete));
         }
 
+		//Deactivate Ease actions coroutine
 		public IEnumerator DeactivateCoroutine(Action onComplete = null)
 		{
             //Get the length of the longest tween (including delay)
@@ -224,267 +321,59 @@ namespace noWeekend
 			//Finish all Tweens
 			foreach (EaseAction easeAction in deactivateEaseActions)
 			{
-				easeAction.SetEnd(targetTransform);
+				if (IsEaseActionLastOfType(deactivateEaseActions, easeAction))
+				{
+					easeAction.SetEnd(targetTransform);
+				}
 			}
 
 			//Run any on complete Actions
 			onDeactivateCompleteAction?.Invoke();
 			onComplete?.Invoke();
-		}
 
-	}
-
-    [System.Serializable]
-    public abstract class EaseAction
-    {
-        public float duration = 1;
-        public float delay = 0;
-        public EaseType easeType = EaseType.SineInOut;
-        public float Duration => delay + duration;
-        public abstract string EaseName {get;}
-        public abstract WeekendTween.EaseActionType EaseActionType { get; }
-
-		public void Process(EaseRefererceTransform targetTransform, float time)
-        {
-            
-            if(time < delay || time > delay + duration)
-            {
-                return;
-            }
-
-            float value = Mathf.InverseLerp(delay, duration + delay, time);
-            ApplyEase(targetTransform, value);
-        }
-
-        public void Process(Transform targetTransform, float time)
-        {
-			if (time < delay || time > delay + duration)
+			if (hideAfterDisable)
 			{
-				return;
+				Hide();
 			}
-
-			float value = Mathf.InverseLerp(delay, duration + delay, time);
-            ApplyEase(targetTransform, value);
-        }
-        protected virtual void ApplyEase(Transform targetTransform, float value) { }
-        protected virtual void ApplyEase(EaseRefererceTransform targetTransform, float value) { }
-        public virtual void SetStart(Transform targetTransform){ }
-        public virtual void SetStart(EaseRefererceTransform targetTransform) { }
-        public virtual void SetEnd(Transform targetTransform){ }
-        public virtual void SetEnd(EaseRefererceTransform targetTransform) { }
-    }
-
-    [System.Serializable]
-    public class PositionEaseAction : EaseAction
-    {
-        public override string EaseName => "Ease Position";
-		public Vector3 fromPosition;
-        public Vector3 toPosition;
-        public override WeekendTween.EaseActionType EaseActionType => WeekendTween.EaseActionType.Position;
-
-		public PositionEaseAction(Vector3 positions)
-        {
-            this.fromPosition = positions;
-            this.toPosition = positions;
-        }
-
-        public PositionEaseAction(Vector3 fromPosition, Vector3 toPosition)
-        {
-            this.fromPosition = fromPosition;
-            this.toPosition = toPosition;
-        }
-
-        protected override void ApplyEase(Transform targetTransform, float value)
-        {
-            targetTransform.localPosition = Vector3.LerpUnclamped(fromPosition, toPosition, Ease.GetEase(easeType, value));
-        }
-        protected override void ApplyEase(EaseRefererceTransform targetTransform, float value)
-        {
-            targetTransform.localPosition = Vector3.LerpUnclamped(fromPosition, toPosition, Ease.GetEase(easeType, value));
-        }
-
-        public override void SetStart(Transform targetTransform)
-        {
-            targetTransform.localPosition = fromPosition;
-        }
-
-        public override void SetStart(EaseRefererceTransform targetTransform)
-        {
-            targetTransform.localPosition = fromPosition;
-        }
-
-        public override void SetEnd(Transform targetTransform)
-		{
-            targetTransform.localPosition = toPosition;
-        }
-        public override void SetEnd(EaseRefererceTransform targetTransform)
-        {
-            targetTransform.localPosition = toPosition;
-        }
-
-        public void SetFromPositionToCurrent(Transform targetTransform)
-        {
-            fromPosition = targetTransform.localPosition;
-
 		}
 
-        public void SetToPositionToCurrent(Transform targetTransform)
-        {
-			toPosition = targetTransform.localPosition;
-		}
-    }
+		// -----------------------------------------------------------------
+		// Helper funcitons
 
-    [System.Serializable]
-    public class RotateEaseAction : EaseAction
-    {
-
-		public override string EaseName => "Ease Rotation";
-		public Quaternion toRotation;
-        public Quaternion fromRotation;
-		public override WeekendTween.EaseActionType EaseActionType => WeekendTween.EaseActionType.Rotation;
-
-		public RotateEaseAction(Quaternion rotations)
-        {
-            this.toRotation = rotations;
-            this.fromRotation = rotations;
-        }
-
-        public RotateEaseAction(Quaternion toRotation, Quaternion fromRotation)
-        {
-            this.toRotation = toRotation;
-            this.fromRotation = fromRotation;
-        }
-
-        protected override void ApplyEase(Transform targetTransform, float value)
-        {
-            targetTransform.localRotation = Quaternion.LerpUnclamped(fromRotation, toRotation, Ease.GetEase(easeType, value));
-        }
-        protected override void ApplyEase(EaseRefererceTransform targetTransform, float value)
-        {
-            targetTransform.localRotation = Quaternion.LerpUnclamped(fromRotation, toRotation, Ease.GetEase(easeType, value));
-        }
-
-        public override void SetStart(Transform targetTransform)
-        {
-            targetTransform.localRotation = fromRotation;
-        }
-        public override void SetEnd(Transform targetTransform)
-        {
-            targetTransform.localRotation = toRotation;
-        }
-        public override void SetStart(EaseRefererceTransform targetTransform)
-        {
-            targetTransform.localRotation = fromRotation;
-        }
-        public override void SetEnd(EaseRefererceTransform targetTransform)
-        {
-            targetTransform.localRotation = toRotation;
-        }
-
-		public void SetFromRotationToCurrent(Transform targetTransform)
+		//Find all renderers as children of the targetTransform
+		private void GetAllRenderersIfNeeded()
 		{
-			toRotation = targetTransform.localRotation;
+			if (renders != null) return;
 
+			RebuildRederers();
 		}
 
-		public void SetToRotationToCurrent(Transform targetTransform)
+		//Compliles a list of renders and images to hide if needed
+		public void RebuildRederers()
 		{
-			toRotation = targetTransform.localRotation;
+			renders = new();
+			images = new();
+
+			recursiveCheck(targetTransform);
+
+			void recursiveCheck(Transform checkingTransform)
+			{
+				foreach (Renderer renderer in checkingTransform.GetComponentsInChildren<Renderer>())
+				{
+					renders.Add(renderer);
+				}
+
+				foreach (Image image in checkingTransform.GetComponentsInChildren<Image>())
+				{
+					images.Add(image);
+				}
+
+				foreach (Transform child in checkingTransform)
+				{
+					recursiveCheck(child);
+				}
+			}
 		}
 	}
-
-    [System.Serializable]
-    public class ScaleEaseAction : EaseAction
-    {
-		public override string EaseName => "Ease Scale";
-		public Vector3 fromScale;
-        public Vector3 toScale;
-		public override WeekendTween.EaseActionType EaseActionType => WeekendTween.EaseActionType.Scale;
-
-		public ScaleEaseAction(Vector3 scales)
-        {
-            this.fromScale = scales;
-            this.toScale = scales;
-        }
-
-
-        public ScaleEaseAction(Vector3 fromScale, Vector3 toScale)
-        {
-            this.fromScale = fromScale;
-            this.toScale = toScale;
-        }
-
-        protected override void ApplyEase(Transform targetTransform, float value)
-        {
-            targetTransform.localScale = Vector3.LerpUnclamped(fromScale, toScale, Ease.GetEase(easeType, value));
-        }
-        protected override void ApplyEase(EaseRefererceTransform targetTransform, float value)
-        {
-            targetTransform.localScale = Vector3.LerpUnclamped(fromScale, toScale, Ease.GetEase(easeType, value));
-        }
-
-        public override void SetStart(Transform targetTransform)
-        {
-            targetTransform.localScale = fromScale;
-        }
-        public override void SetStart(EaseRefererceTransform targetTransform)
-        {
-            targetTransform.localScale = fromScale;
-        }
-
-        public override void SetEnd(Transform targetTransform)
-        {
-            targetTransform.localScale = toScale;
-        }
-        public override void SetEnd(EaseRefererceTransform targetTransform)
-        {
-            targetTransform.localScale = toScale;
-        }
-
-		public void SetFromScaleToCurrent(Transform targetTransform)
-		{
-			toScale = targetTransform.localScale;
-
-		}
-
-		public void SetToScaleToCurrent(Transform targetTransform)
-		{
-			toScale = targetTransform.localScale;
-		}
-	}
-
-    public class EaseRefererceTransform
-    {
-        public Transform transform;
-        public Vector3 localPosition;
-        public Vector3 position;
-        public Vector3 localScale;
-        public Quaternion localRotation;
-        public Rect rect;
-        public Bounds bounds;
-        public bool isRectTransform;
-
-        public Vector3 lossyScale; 
-
-		public EaseRefererceTransform(Transform referenceTransform)
-		{
-            this.transform = referenceTransform;
-            this.localPosition = referenceTransform.localPosition;
-			this.localScale = referenceTransform.localScale;
-            this.localRotation = referenceTransform.localRotation;
-            this.lossyScale = referenceTransform.lossyScale;
-            if (referenceTransform.GetType() == typeof(RectTransform))
-            {
-                rect = ((RectTransform)referenceTransform).rect;
-                isRectTransform = true;
-            }
-            else
-            {
-                isRectTransform = false;
-            }
-
-        }
-	}
-
 }
 

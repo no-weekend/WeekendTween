@@ -176,10 +176,13 @@ MonoBehaviour:
   targetTransform: {fileID: 2101803589}
   activateEaseActions:
   - rid: 8290486059659689987
-  deactivateEaseActions: []
+  deactivateEaseActions:
+  - rid: 8290486064436215812
   activateOnEnable: 0
   initiliseActiveState: 1
-  useUnscaledTime: 0
+  hideOnEnable: 1
+  hideAfterDisable: 0
+  useUnscaledTime: 1
   onActivateCompleteAction:
     m_PersistentCalls:
       m_Calls: []
@@ -197,6 +200,14 @@ MonoBehaviour:
         easeType: 30
         fromPosition: {x: -130, y: 0, z: 0}
         toPosition: {x: 0, y: 0, z: 0}
+    - rid: 8290486064436215812
+      type: {class: PositionEaseAction, ns: noWeekend, asm: noweekend.weekendtween.runtime}
+      data:
+        duration: 1
+        delay: 0
+        easeType: 17
+        fromPosition: {x: 0, y: 0, z: 0}
+        toPosition: {x: -130, y: 0, z: 0}
 --- !u!1 &1092476900
 GameObject:
   m_ObjectHideFlags: 0
@@ -494,7 +505,7 @@ Canvas:
   m_Enabled: 1
   serializedVersion: 3
   m_RenderMode: 0
-  m_Camera: {fileID: 0}
+  m_Camera: {fileID: 1092476902}
   m_PlaneDistance: 100
   m_PixelPerfect: 0
   m_ReceivesEvents: 1

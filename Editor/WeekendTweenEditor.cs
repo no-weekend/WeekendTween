@@ -112,29 +112,30 @@ namespace noWeekend
 			}
 
 			//Select if the active tweens play when a gameobject is enabled
-			bool activateOnEnableValue = EditorGUILayout.Toggle("Activate on Enable", myTarget.activateOnEnable);
-			if (activateOnEnableValue != myTarget.activateOnEnable)
-			{
-				myTarget.activateOnEnable = activateOnEnableValue;
-				EditorUtility.SetDirty(myTarget);
-			}
-
+			myTarget.activateOnEnable = EditorGUILayout.Toggle("Activate on Enable", myTarget.activateOnEnable);
+			//if (activateOnEnableValue != myTarget.activateOnEnable)
+			//{
+			//	myTarget.activateOnEnable = activateOnEnableValue;
+			//	EditorUtility.SetDirty(myTarget);
+			//}
+			myTarget.hideOnEnable = EditorGUILayout.Toggle("Hide on Enable", myTarget.hideOnEnable);
+			myTarget.hideAfterDisable = EditorGUILayout.Toggle("Hide after Disable", myTarget.hideAfterDisable);
 			//Select if a tween initilises with the settings of 
-			bool useInitiliseActiveStatus = EditorGUILayout.Toggle("Initilise Active Status", myTarget.initiliseActiveState);
-			if (useInitiliseActiveStatus != myTarget.initiliseActiveState)
-			{
-				myTarget.initiliseActiveState = useInitiliseActiveStatus;
-				EditorUtility.SetDirty(myTarget);
-			}
+			myTarget.initiliseActiveState = EditorGUILayout.Toggle("Initilise Active Status", myTarget.initiliseActiveState);
+			//if (useInitiliseActiveStatus != myTarget.initiliseActiveState)
+			//{
+			//	myTarget.initiliseActiveState = useInitiliseActiveStatus;
+			//	EditorUtility.SetDirty(myTarget);
+			//}
 
 
 			//Select if a tween uses unscaled time or not
-			bool useUnscaledTimeValue = EditorGUILayout.Toggle("Use Unscaled time", myTarget.useUnscaledTime);
-			if (useUnscaledTimeValue != myTarget.useUnscaledTime)
-			{
-				myTarget.useUnscaledTime = useUnscaledTimeValue;
-				EditorUtility.SetDirty(myTarget);
-			}
+			myTarget.useUnscaledTime = EditorGUILayout.Toggle("Use Unscaled time", myTarget.useUnscaledTime);
+			//if (useUnscaledTimeValue != myTarget.useUnscaledTime)
+			//{
+			//	myTarget.useUnscaledTime = useUnscaledTimeValue;
+			//	EditorUtility.SetDirty(myTarget);
+			//}
 
 			//space
 			EditorGUILayout.Space();
